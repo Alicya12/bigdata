@@ -1,0 +1,42 @@
+services:
+  cassandra:
+    image: cassandra:latest
+    container_name: cassandra-container
+    ports:
+      - "9042:9042"
+    networks:
+      - mybridge
+    environment:
+      - MAX_HEAP_SIZE=512M
+      - HEAP_NEWSIZE=128M
+    volumes:
+      - cassandra_data:/var/lib/cassandra
+      - ./datasets:/datasets
+
+  cassandra-web:
+    image: ipushc/cassandra-web
+    container_name: cassandra-web-container
+    environment:
+      - HOST_PORT=:80
+      - READ_ONLY=false
+      - CASSANDRA_HOST=cassandra
+      - CASSANDRA_PORT=9042
+      - CASSANDRA_USERNAME=cassandra  
+      - CASSANDRA_PASSWORD=cassandra  
+    command: ["/wait-for-it.sh", "cassandra:9042", "--", "./service", "-c", "config.yaml"]
+    ports:
+      - "3000:80"
+    networks:
+      - mybridge
+    volumes:
+      - ./wait-for-it.sh:/wait-for-it.sh
+    depends_on:
+      - cassandra
+
+networks:
+  mybridge:
+    driver: bridge
+    external: true
+
+volumes:
+  cassandra_data:
